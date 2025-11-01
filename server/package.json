@@ -1,0 +1,28 @@
+{
+  "name": "mcpui-travel-planner-server",
+  "version": "1.0.0",
+  "description": "MCP-UI Travel Planner Server",
+  "main": "build/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node build/index.js",
+    "bridge": "node build/bridge-server.js"
+  },
+  "keywords": ["mcp", "mcp-ui", "server"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@mcp-ui/server": "^5.13.1",
+    "@modelcontextprotocol/sdk": "^1.20.2",
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
+    "@types/node": "^24.9.2",
+    "typescript": "^5.9.3"
+  }
+}
