@@ -18,14 +18,30 @@ function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedTool, setSelectedTool] = useState<'hello_world' | 'hello_world_ui'>('hello_world');
+  const [selectedToolBase, setSelectedToolBase] = useState<string>('search_destinations');
+  const [useUI, setUseUI] = useState(false);
+
+  // Combine base tool with UI suffix based on toggle
+  const selectedTool = useUI
+    ? `${selectedToolBase}_ui`
+    : selectedToolBase;
 
   const callTool = async () => {
     if (!input.trim()) return;
 
+    let args: any = {};
+
+    try {
+      // Try to parse input as JSON for complex arguments
+      args = JSON.parse(input);
+    } catch {
+      // If not JSON, treat as simple string (for legacy hello_world tools)
+      args = { name: input };
+    }
+
     const userMessage: Message = {
       role: 'user',
-      content: `Calling ${selectedTool} with name: ${input}`,
+      content: `Calling ${selectedTool} with args: ${JSON.stringify(args, null, 2)}`,
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -38,7 +54,7 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tool: selectedTool,
-          args: { name: input },
+          args: args,
         }),
       });
 
@@ -46,7 +62,7 @@ function App() {
 
       const assistantMessage: Message = {
         role: 'assistant',
-        content: result.text || 'No text response',
+        content: result.text || result.error || 'No response',
         uiResource: result.uiResource,
       };
 
@@ -76,8 +92,9 @@ function App() {
       <div className="messages">
         {messages.length === 0 && (
           <div className="empty-state">
-            <p>👋 Welcome! Try calling a tool to see MCP and MCP-UI in action.</p>
-            <p>Type a name and select a tool below.</p>
+            <p>👋 Welcome to the Travel Planner!</p>
+            <p>Select a tool and enter JSON arguments in the input below.</p>
+            <p>Example: <code>{JSON.stringify({ type: "beach" })}</code></p>
           </div>
         )}
 
@@ -113,25 +130,49 @@ function App() {
       </div>
 
       <div className="input-area">
-        <div className="tool-selector">
-          <label>
-            <input
-              type="radio"
-              value="hello_world"
-              checked={selectedTool === 'hello_world'}
-              onChange={(e) => setSelectedTool(e.target.value as 'hello_world')}
-            />
-            Text Tool (plain MCP)
-          </label>
-          <label>
-            <input
-              type="radio"
-              value="hello_world_ui"
-              checked={selectedTool === 'hello_world_ui'}
-              onChange={(e) => setSelectedTool(e.target.value as 'hello_world_ui')}
-            />
-            UI Tool (MCP-UI)
-          </label>
+        <div className="tabs">
+          <div className="tabs-list">
+            <button
+              className={`tab ${selectedToolBase === 'search_destinations' ? 'active' : ''}`}
+              onClick={() => setSelectedToolBase('search_destinations')}
+            >
+              Search Destinations
+            </button>
+            <button
+              className={`tab ${selectedToolBase === 'get_destination_info' ? 'active' : ''}`}
+              onClick={() => setSelectedToolBase('get_destination_info')}
+            >
+              Get Destination Info
+            </button>
+            <button
+              className={`tab ${selectedToolBase === 'create_itinerary' ? 'active' : ''}`}
+              onClick={() => setSelectedToolBase('create_itinerary')}
+            >
+              Create Itinerary
+            </button>
+            <button
+              className={`tab ${selectedToolBase === 'hello_world' ? 'active' : ''}`}
+              onClick={() => setSelectedToolBase('hello_world')}
+            >
+              Hello World
+            </button>
+          </div>
+
+          <div className="mode-toggle">
+            <label className="toggle-label">
+              <span className={!useUI ? 'active' : ''}>Text</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={useUI}
+                className={`switch ${useUI ? 'checked' : ''}`}
+                onClick={() => setUseUI(!useUI)}
+              >
+                <span className="switch-thumb" />
+              </button>
+              <span className={useUI ? 'active' : ''}>UI</span>
+            </label>
+          </div>
         </div>
 
         <div className="input-row">
@@ -140,7 +181,11 @@ function App() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && !loading && callTool()}
-            placeholder="Enter your name..."
+            placeholder={
+              selectedToolBase === 'hello_world'
+                ? 'Enter your name...'
+                : 'Enter JSON arguments (e.g., {"type": "beach"})'
+            }
             disabled={loading}
           />
           <button onClick={callTool} disabled={loading || !input.trim()}>
